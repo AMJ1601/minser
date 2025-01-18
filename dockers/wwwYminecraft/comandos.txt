@@ -1,0 +1,2 @@
+comandos minecraft -> docker attach id
+entrar a la maquina -> docker exec -it <nombre-del-contenedor> /bin/bash
