@@ -1,0 +1,79 @@
+services:
+  duckdns:
+    image: linuxserver/duckdns
+    container_name: duckdns
+    environment:
+        - DUCKDNSTOKEN=1065edd0-6867-459e-8e42-5cafde1bcae2
+        - DUCKDNSDOMAIN=minser.duckdns.org
+    restart: always
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+    networks:
+      - default
+
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - certs:/etc/nginx/certs:ro
+      - vhostd:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - acme:/etc/acme.sh
+    labels:
+      - com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy
+
+  letsencrypt:
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    restart: always
+    environment:
+      - NGINX_PROXY_CONTAINER=nginx-proxy
+    volumes:
+      - certs:/etc/nginx/certs:rw
+      - vhostd:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - acme:/etc/acme.sh
+
+  www:
+    image: nginx
+    restart: always
+    expose:
+      - "80"
+    volumes:
+      - /root/docker/www/1:/usr/share/nginx/html:ro
+    environment:
+      - VIRTUAL_HOST=minser.duckdns.org,www.minser.duckdns.org
+      - LETSENCRYPT_HOST=minser.duckdns.org,www.minser.duckdns.org
+      - LETSENCRYPT_EMAIL=amj16012004@gmail.com
+    depends_on:
+      - nginx-proxy
+      - letsencrypt
+
+  mc:
+    image: itzg/minecraft-server
+    environment:
+      EULA: "true"
+      VERSION: "1.16.1"
+      ONLINE_MODE: "false"
+      MOTD: "¡Bienvenido a mi servidor"
+      MAX_PLAYERS: 10
+    ports:
+      - "25565:25565"
+    volumes:
+      - mine:/data
+    stdin_open: true
+    tty: true
+    restart: always
+    mem_limit: 2g
+    cpus: 2.0
+volumes:
+    data: {}
+    certs:
+    html:
+    vhostd:
+    acme:
+    mine: {}
